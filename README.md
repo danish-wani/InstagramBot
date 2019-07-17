@@ -5,4 +5,4 @@
 
 Download python3 and pip3
 Download geckodriver and copy that to /usr/local/bin/
-Install selenium
+run pip install -r requirements.txt
