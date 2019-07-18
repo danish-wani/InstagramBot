@@ -1,4 +1,7 @@
-#	https://selenium-python.readthedocs.io/from selenium import webdriver
+__author__ = 'danish_wani'
+
+
+#https://selenium-python.readthedocs.io/from selenium import webdriver
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from time import sleep
