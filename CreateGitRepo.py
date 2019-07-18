@@ -13,7 +13,9 @@ import os
 PROJECT_NAME = 'task_demo'
 
 class Project:
-
+        """
+            Creates a Repository on Github, Clones that to local machine and creates a virtual environment for the same
+        """
 	def __init__(self, project_name):
 		self.project_name = project_name
 
