@@ -87,7 +87,7 @@ if __name__ == '__main__':
 	else:
 		project_name = PROJECT_NAME
 	project_task = Project(project_name)
-	project_task.login('danish-wani','danish@17')
+	project_task.login('username','password')
 	project_task.create_github_repo()
 	project_task.get_github_repo_click()
 	sleep(3)
