@@ -1,10 +1,5 @@
 __author__ = 'danish_wani'
 
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from time import sleep
 import sys
 import random
@@ -19,23 +14,13 @@ class Project:
 	def __init__(self, repo_name, private):
 		self.repo_name = repo_name
 		self.private = private
+		self.clone_url = str()
 
 	def login(self, username, password):
-		self.username = username
-		self.password = password
-		self.bot = webdriver.Firefox()
-		self.bot.get('https://github.com/login')
-		username_field = WebDriverWait(self.bot, 10).until(EC.presence_of_element_located((By.ID, "login_field")))
-		password_field = WebDriverWait(self.bot, 10).until(EC.presence_of_element_located((By.ID, "password")))
-		username_field.clear()
-		password_field.clear()
-		username_field.send_keys(self.username)
-		password_field.send_keys(self.password)
-		password_field.send_keys(Keys.RETURN)
-		print('**Login Successful**')
+		pass
 
 	def clone_repo_locally(self):
-		os.system("git clone {0}".format(self.repo_link))
+		os.system("git clone {0}".format(self.clone_url))
 		print('**Git Repo cloned successfully**')
 
 	def create_virtualenv(self):
@@ -49,8 +34,28 @@ class Foreground(Project):
 	"""
 	def __init__(self, repo_name=REPOSITORY_NAME, private=True):
 		super().__init__(repo_name=repo_name, private=private)
-		
-	def create_github_repo(self):
+		self.bot = object()
+
+	def login(self, username, password):
+		from selenium import webdriver
+		from selenium.webdriver.common.keys import Keys
+		from selenium.webdriver.common.by import By
+		from selenium.webdriver.support.ui import WebDriverWait
+		from selenium.webdriver.support import expected_conditions as EC
+		self.username = username
+		self.password = password
+		self.bot = webdriver.Firefox()
+		self.bot.get('https://github.com/login')
+		username_field = WebDriverWait(self.bot, 10).until(EC.presence_of_element_located((By.ID, "login_field")))
+		password_field = WebDriverWait(self.bot, 10).until(EC.presence_of_element_located((By.ID, "password")))
+		username_field.clear()
+		password_field.clear()
+		username_field.send_keys(self.username)
+		password_field.send_keys(self.password)
+		password_field.send_keys(Keys.RETURN)
+		print('**Login Successful**')
+
+	def create(self):
 		options_dropdown = WebDriverWait(self.bot, 10).until(EC.element_to_be_clickable
 			((By.XPATH, "/html/body/div[1]/header/div[6]/details")))
 		options_dropdown.click()	#navigates to new repo page
@@ -88,6 +93,7 @@ class Foreground(Project):
 		link_field = WebDriverWait(self.bot, 10).until(EC.element_to_be_clickable
 			((By.XPATH,'/html/body/div[4]/div/main/div[2]/div/div[3]/span/get-repo-controller/details/div/div/div[1]/div[1]/div/input')))
 		self.repo_link = link_field.get_attribute("value")
+		self.project_task.bot.quit()
 
 
 class Background(Project):
@@ -96,30 +102,53 @@ class Background(Project):
 	"""
 	def __init__(self, repo_name=REPOSITORY_NAME, private=True):
 		super().__init__(repo_name=repo_name, private=private)
+		self.github = object()
+		self.user = object()
 	
-	def create_github_repo(self):
-		pass
+	def login(self, username, password):
+		from github import Github
+		try:
+			self.github = Github(username, password)
+			print('Login Successfull')
+		except Exception as e:
+			print(e)
+			return e
+
+	def create(self):
+		user = self.github.get_user()
+		try:
+			repo = user.create_repo(self.repo_name, private=self.private)
+			self.clone_url = repo.git_url
+			print('Successfully created the repo')
+		except Exception as e:
+			print(e)
+			return e
 
 
 if __name__ == '__main__':
 	username, password, repo_name = [value.strip() for value in str(input('Enter username, password and repository name, separted by comma(,): \n')).split(',')]
-	print(username)
-	print(password)
 	private = str(input('Do you want to keep the repository private? (Y/N): \n'))
 	private = True if private.lower() == 'y' else False
 	background = str(input('Do you want to run the process in background(recommended)? (Y/N): \n'))
 	background = True if background.lower() == 'y' else False
+	# background = True
+	# private = True
+	# repo_name = REPOSITORY_NAME
 	if not repo_name:
 		repo_name = REPOSITORY_NAME
 	if background:
-		# project_task = Background(repo_name=repo_name, private=private)
-		pass
+		project_task = Background(repo_name=repo_name, private=private)
 	else:
 		project_task = Foreground(repo_name=repo_name, private=private)
-	project_task.login(username, password)
-	project_task.create_github_repo()
+	credentials_error = project_task.login(username, password)
+	if credentials_error:
+		print('Invalid credentials')
+		exit
+	repository_error = project_task.create()
+	if repository_error:
+		print('Repository with the provided name already exists')
+		exit
 	sleep(3)
-	project_task.bot.quit()
 	project_task.clone_repo_locally()
 	project_task.create_virtualenv()
 
