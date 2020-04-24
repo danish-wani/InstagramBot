@@ -12,12 +12,11 @@ import os
 
 REPOSITORY_NAME = 'automation_repo'
 
-
 class Project:
 	"""
 		Creates a Repository on Github, Clones that to local machine and creates a virtual environment for the same
 	"""
-	def __init__(self, repo_name=REPOSITORY_NAME, private=True):
+	def __init__(self, repo_name, private):
 		self.repo_name = repo_name
 		self.private = private
 
@@ -35,6 +34,22 @@ class Project:
 		password_field.send_keys(Keys.RETURN)
 		print('**Login Successful**')
 
+	def clone_repo_locally(self):
+		os.system("git clone {0}".format(self.repo_link))
+		print('**Git Repo cloned successfully**')
+
+	def create_virtualenv(self):
+		os.system("sudo virtualenv -p python3 virtualenv_{0}".format(self.repo_name))
+		print('**Virtualenv by the name env_{0} created successfully**'.format(self.repo_name))
+
+
+class Foreground(Project):
+	"""
+		Created github repository in Foreground
+	"""
+	def __init__(self, repo_name=REPOSITORY_NAME, private=True):
+		super().__init__(repo_name=repo_name, private=private)
+		
 	def create_github_repo(self):
 		options_dropdown = WebDriverWait(self.bot, 10).until(EC.element_to_be_clickable
 			((By.XPATH, "/html/body/div[1]/header/div[6]/details")))
@@ -65,6 +80,7 @@ class Project:
 		WebDriverWait(self.bot, 10).until(EC.element_to_be_clickable((By.XPATH,'//*[@id="repository_auto_init"]'))).click()	#initialize th readme
 		WebDriverWait(self.bot, 10).until(EC.element_to_be_clickable((By.XPATH,'//*[@id="new_repository"]/div[3]/button'))).click()	#submit and create the repo
 		print('**Repository on Github successfully created by the name {0}**'.format(new_name if new_name else self.repo_name))
+		self.get_github_repo_click()
 
 	def get_github_repo_click(self):
 		WebDriverWait(self.bot, 10).until(EC.element_to_be_clickable
@@ -73,13 +89,16 @@ class Project:
 			((By.XPATH,'/html/body/div[4]/div/main/div[2]/div/div[3]/span/get-repo-controller/details/div/div/div[1]/div[1]/div/input')))
 		self.repo_link = link_field.get_attribute("value")
 
-	def clone_repo_locally(self):
-		os.system("git clone {0}".format(self.repo_link))
-		print('**Git Repo cloned successfully**')
 
-	def create_virtualenv(self):
-		os.system("sudo virtualenv -p python3 virtualenv_{0}".format(self.repo_name))
-		print('**Virtualenv by the name env_{0} created successfully**'.format(self.repo_name))
+class Background(Project):
+	"""
+		Created github repository in Background
+	"""
+	def __init__(self, repo_name=REPOSITORY_NAME, private=True):
+		super().__init__(repo_name=repo_name, private=private)
+	
+	def create_github_repo(self):
+		pass
 
 
 if __name__ == '__main__':
@@ -88,14 +107,20 @@ if __name__ == '__main__':
 	print(password)
 	private = str(input('Do you want to keep the repository private? (Y/N): \n'))
 	private = True if private.lower() == 'y' else False
+	background = str(input('Do you want to run the process in background(recommended)? (Y/N): \n'))
+	background = True if background.lower() == 'y' else False
 	if not repo_name:
 		repo_name = REPOSITORY_NAME
-	project_task = Project(repo_name=repo_name, private=private)
+	if background:
+		# project_task = Background(repo_name=repo_name, private=private)
+		pass
+	else:
+		project_task = Foreground(repo_name=repo_name, private=private)
 	project_task.login(username, password)
 	project_task.create_github_repo()
-	project_task.get_github_repo_click()
 	sleep(3)
 	project_task.bot.quit()
 	project_task.clone_repo_locally()
 	project_task.create_virtualenv()
+
 	

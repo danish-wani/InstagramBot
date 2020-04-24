@@ -1,5 +1,6 @@
 # PythonBots
 
+RECOMMENDATIONS: OS ubuntu v>16 and mozila firefox installed
 1. An Instagram Bot that searches for a provided hashtag and likes few posts containing that hashtag.
 2. Another python bot that creates git hub repo, clones that locally and creates a virtual environment for the same.
 
