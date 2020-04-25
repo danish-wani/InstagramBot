@@ -46,12 +46,13 @@ class InstagramBot():
 		self.bot.close()
 
 if __name__ == '__main__':
-	insta_bot = InstagramBot('username','password')	# provide credentials of the instagram account
+	username, password, hashtag = [value.strip() for value in str(input('Enter username, password and hashtag separted by comma(,): \n')).split(',')]
+	insta_bot = InstagramBot(username, password)	# provide credentials of the instagram account
 	try:
 		insta_bot.login()
 	except Exception as ex:
 		print('Invalid Credentials  ',ex)
 	try:
-		insta_bot.search("#islamic")	#provide the hashtag
+		insta_bot.search(hashtag)	#provide the hashtag
 	except Exception as e:
 		print(e)

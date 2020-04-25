@@ -1,5 +1,15 @@
 __author__ = 'danish_wani'
 
+try:
+	from selenium import webdriver
+	from selenium.webdriver.common.keys import Keys
+	from selenium.webdriver.common.by import By
+	from selenium.webdriver.support.ui import WebDriverWait
+	from selenium.webdriver.support import expected_conditions as EC
+except Exception as e:
+	print(e)
+
+from github import Github
 from time import sleep
 import sys
 import random
@@ -7,12 +17,13 @@ import os
 
 REPOSITORY_NAME = 'automation_repo'
 
-class Project:
+class Repository:
 	"""
 		Creates a Repository on Github, Clones that to local machine and creates a virtual environment for the same
 	"""
-	def __init__(self, repo_name, private):
+	def __init__(self, repo_name, ssh, private):
 		self.repo_name = repo_name
+		self.ssh = ssh
 		self.private = private
 		self.clone_url = str()
 
@@ -28,20 +39,15 @@ class Project:
 		print('**Virtualenv by the name env_{0} created successfully**'.format(self.repo_name))
 
 
-class Foreground(Project):
+class Foreground(Repository):
 	"""
-		Created github repository in Foreground
+		Creates github repository in Foreground
 	"""
-	def __init__(self, repo_name=REPOSITORY_NAME, private=True):
-		super().__init__(repo_name=repo_name, private=private)
+	def __init__(self, repo_name=REPOSITORY_NAME, ssh=False, private=True):
+		super().__init__(repo_name=repo_name, ssh=ssh, private=private)
 		self.bot = object()
 
 	def login(self, username, password):
-		from selenium import webdriver
-		from selenium.webdriver.common.keys import Keys
-		from selenium.webdriver.common.by import By
-		from selenium.webdriver.support.ui import WebDriverWait
-		from selenium.webdriver.support import expected_conditions as EC
 		self.username = username
 		self.password = password
 		self.bot = webdriver.Firefox()
@@ -93,63 +99,91 @@ class Foreground(Project):
 		link_field = WebDriverWait(self.bot, 10).until(EC.element_to_be_clickable
 			((By.XPATH,'/html/body/div[4]/div/main/div[2]/div/div[3]/span/get-repo-controller/details/div/div/div[1]/div[1]/div/input')))
 		self.repo_link = link_field.get_attribute("value")
-		self.project_task.bot.quit()
+		self.bot.quit()
 
 
-class Background(Project):
+class Background(Repository):
 	"""
-		Created github repository in Background
+		Creates github repository in Background
 	"""
-	def __init__(self, repo_name=REPOSITORY_NAME, private=True):
-		super().__init__(repo_name=repo_name, private=private)
+	def __init__(self, repo_name=REPOSITORY_NAME, ssh=True, private=True):
+		super().__init__(repo_name=repo_name, ssh=ssh, private=private)
 		self.github = object()
 		self.user = object()
 	
 	def login(self, username, password):
-		from github import Github
 		try:
 			self.github = Github(username, password)
-			print('Login Successfull')
+			self.user = self.github.get_user()
+			self.user.login
+			print('Login successfull')
 		except Exception as e:
 			print(e)
 			return e
 
 	def create(self):
-		user = self.github.get_user()
 		try:
-			repo = user.create_repo(self.repo_name, private=self.private)
-			self.clone_url = repo.git_url
-			print('Successfully created the repo')
+			repo = self.user.create_repo(self.repo_name, private=self.private)
+			if self.ssh:
+				self.clone_url = repo.ssh_url
+			else:
+				self.clone_url = repo.clone_url
+			print('Successfully created the repo', self.clone_url)
 		except Exception as e:
 			print(e)
 			return e
 
 
+class Main:
+	def __init__(self):
+		self.main()
+
+	def main(self):
+		username, password, repo_name = self.fetch_credentials()
+		ssh, private, background = self.fetch_extra_params()
+
+		if background:
+			project_task = Background(repo_name=repo_name, ssh=ssh, private=private)
+		else:
+			project_task = Foreground(repo_name=repo_name,  ssh=ssh, private=private)
+		credentials_error = project_task.login(username, password)
+		if credentials_error:
+			print('Invalid credentials')
+			return
+		repository_error = project_task.create()
+		if repository_error:
+			print('Repository with the provided name already exists')
+			return
+		sleep(3)
+		project_task.clone_repo_locally()
+		project_task.create_virtualenv()
+
+	@staticmethod
+	def fetch_credentials():
+		username, password, repo_name = [value.strip() for value in str(input('Enter username, password and repository name, separted by comma(,): \n')).split(',')]
+		if not repo_name:
+			repo_name = REPOSITORY_NAME
+		return username, password, repo_name
+
+	def fetch_extra_params(self):
+		ssh = str(input('Do you want to clone over ssh? (Y/N) N -> https (Default is ssh): \n'))
+		ssh = self.get_boolean(ssh)
+		
+		private = str(input('Do you want to keep the repository private? (Y/N): \n'))
+		private = self.get_boolean(private)
+
+		background = str(input('Do you want to run the process in background(recommended)? (Y/N): \n'))
+		background = self.get_boolean(background)
+		return ssh, private, background
+
+	@staticmethod
+	def get_boolean(input_value):
+		if input_value.lower() == 'y' or not input_value:
+			return True
+		else:
+			return False
+
 if __name__ == '__main__':
-	username, password, repo_name = [value.strip() for value in str(input('Enter username, password and repository name, separted by comma(,): \n')).split(',')]
-	private = str(input('Do you want to keep the repository private? (Y/N): \n'))
-	private = True if private.lower() == 'y' else False
-	background = str(input('Do you want to run the process in background(recommended)? (Y/N): \n'))
-	background = True if background.lower() == 'y' else False
-	# background = True
-	# private = True
-	# repo_name = REPOSITORY_NAME
-	if not repo_name:
-		repo_name = REPOSITORY_NAME
-	if background:
-		project_task = Background(repo_name=repo_name, private=private)
-	else:
-		project_task = Foreground(repo_name=repo_name, private=private)
-	credentials_error = project_task.login(username, password)
-	if credentials_error:
-		print('Invalid credentials')
-		exit
-	repository_error = project_task.create()
-	if repository_error:
-		print('Repository with the provided name already exists')
-		exit
-	sleep(3)
-	project_task.clone_repo_locally()
-	project_task.create_virtualenv()
+	Main()
 
 	
