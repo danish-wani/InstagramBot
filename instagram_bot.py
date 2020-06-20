@@ -29,6 +29,7 @@ class InstagramBot():
 		self.bot.find_element_by_class_name("aOOlW").click()	#closes Allow notications pop up of instagram
 
 	def search(self,hashtag):
+		sleep(2)
 		search_field = self.bot.find_element_by_class_name("XTCLo")		#selects the search field
 		search_field.send_keys(hashtag)
 		sleep(2)
@@ -37,12 +38,11 @@ class InstagramBot():
 		thumbnails = self.bot.find_elements_by_class_name("Nnq7C")	#gets all the posts
 		for thumbnail in thumbnails:
 			thumbnail.click()	#opens a post
+			sleep(3)
+			like_button = self.bot.find_element_by_xpath("/html/body/div[4]/div[2]/div/article/div[2]/section[1]/span[1]")
+			like_button.click()	#likes the post
 			sleep(2)
-			like_button = self.bot.find_element_by_xpath("/html/body/div[3]/div[2]/div/article/div[2]/section[1]/span[1]/button/span")
-			if like_button.get_attribute("aria-label") == "Like":
-				self.bot.find_element_by_class_name("dCJp8").click()	#likes the post
-			sleep(2)
-			self.bot.find_element_by_class_name("ckWGn").click()	#closes the modal showing preview of Post
+			self.bot.find_element_by_xpath("/html/body/div[4]/div[3]/button").click()	#closes the modal showing preview of Post
 		self.bot.close()
 
 if __name__ == '__main__':
