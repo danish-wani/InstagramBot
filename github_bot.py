@@ -35,7 +35,7 @@ class Repository:
 		print('**Git Repo cloned successfully**')
 
 	def create_virtualenv(self):
-		os.system("sudo virtualenv -p python3 virtualenv_{0}".format(self.repo_name))
+		os.system("sudo virtualenv -p python3 env_{0}".format(self.repo_name))
 		print('**Virtualenv by the name env_{0} created successfully**'.format(self.repo_name))
 
 
